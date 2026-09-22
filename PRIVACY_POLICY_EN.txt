@@ -1,0 +1,58 @@
+PRIVACY POLICY AND LEGAL NOTICE — GITFLOW MOBILE
+
+Last updated: September 22, 2026
+
+IMPORTANT
+This is an informational template and is not a substitute for legal review. Before publishing the app, replace the fields in brackets and review the text for the countries where the app will be distributed.
+
+1. Who maintains the app
+
+GitFlow Mobile is maintained by [NAME OR ENTITY]. Contact: [CONTACT EMAIL].
+
+2. What the app does
+
+GitFlow Mobile is an Android client for GitHub operations, including repository browsing, search, repository creation and deletion, release downloads, and uploading ZIP files as commits.
+
+3. GitHub token
+
+Authenticated features may require the user to provide a GitHub Personal Access Token. The token is stored locally on the device using Android Keystore and Android encrypted storage. The project does not operate its own server to collect or store tokens.
+
+The token is used to make requests directly to the GitHub API on the user's behalf, according to the permissions granted to the token. Users should create a dedicated token, grant only the permissions needed, and revoke it on GitHub when it is no longer needed or if the device is lost.
+
+No security mechanism on a compromised device can provide absolute protection. Users are responsible for protecting their device, token, and GitHub account.
+
+4. Data processed
+
+The app processes locally the token, information returned by GitHub, and files the user chooses to view, download, or upload. This information is transmitted to GitHub when necessary to perform the requested action.
+
+The project does not sell personal data, does not use data for behavioral advertising, and does not operate its own analytics, unless a future version expressly states otherwise.
+
+5. Third parties
+
+Authenticated requests are made to GitHub infrastructure and are subject to GitHub's policies and terms. The app also uses open-source libraries, including AndroidX components, Jetpack Compose, OkHttp, Kotlin Coroutines, and Android Security Crypto.
+
+6. Retention and deletion
+
+The token remains on the device until the user removes it in the app, clears the app's data, or uninstalls the app. To remove remote access, the user must also revoke the token in GitHub settings.
+
+7. Children
+
+The app is not specifically directed at children. We do not knowingly collect personal data from children.
+
+8. Changes
+
+This policy may be updated when the app or legal requirements change. The update date will be changed when a new version is published.
+
+9. Contact
+
+Privacy questions: [CONTACT EMAIL].
+
+LEGAL NOTICE
+
+GitFlow Mobile is provided “as is”, without express or implied warranties, to the extent permitted by applicable law. Users choose which permissions to grant to their token and are responsible for actions performed through their GitHub account.
+
+The project is not responsible for data loss, repository deletion, GitHub outages, network failures, device compromise, token misuse, or damages arising from use of the app, except where such limitation is not permitted by applicable law.
+
+Before deleting or changing data, confirm the repository and the action. Features that delete data must be used carefully.
+
+The code is distributed under the GNU General Public License v3.0. See the repository's LICENSE file.
