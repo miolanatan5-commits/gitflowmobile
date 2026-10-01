@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.natam.gitflowmobile.AppLog
 import com.natam.gitflowmobile.R
 import com.natam.gitflowmobile.data.ApiException
 import com.natam.gitflowmobile.data.Asset
@@ -106,6 +107,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             store = s
             token = s.getToken()
         } catch (e: Exception) {
+            AppLog.error("token_store_open_failed", e)
             storeError = str(R.string.err_store, e.message ?: str(R.string.err_unknown))
             initializing = false
             return
@@ -117,6 +119,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     login = u.login
                     loadMyRepos(true)
                 } catch (e: ApiException) {
+                    AppLog.error("session_restore_failed", e, "status" to e.code)
                     if (e.code == 401) {
                         token = ""
                         store?.clear()
@@ -125,6 +128,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         say(friendly(e))
                     }
                 } catch (e: Exception) {
+                    AppLog.error("session_restore_failed", e)
                     say(friendly(e))
                 }
                 initializing = false
@@ -152,6 +156,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 withContext(Dispatchers.IO) { store?.saveToken(t) }
                 loadMyRepos(true)
             } catch (e: Exception) {
+                AppLog.error("sign_in_failed", e, "status" to (e as? ApiException)?.code)
                 token = previous
                 loginError = friendly(e)
             }
@@ -200,6 +205,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 myRepos.addAll(page)
                 if (page.size < 50) myEnd = true else myPage++
             } catch (e: Exception) {
+                AppLog.error("load_my_repos_failed", e, "page" to myPage)
                 myError = friendly(e)
             }
             myLoading = false
@@ -226,6 +232,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 say(str(R.string.repo_created, r.fullName))
                 onSuccess()
             } catch (e: Exception) {
+                AppLog.error("create_repo_failed", e, "name" to n, "private" to isPrivate)
                 createError = friendly(e)
             }
             createBusy = false
@@ -245,6 +252,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 say(str(R.string.repo_deleted, repo.fullName))
                 onSuccess()
             } catch (e: Exception) {
+                AppLog.error("delete_repo_failed", e, "repo" to repo.fullName)
                 say(str(R.string.msg_delete_failed, friendly(e)))
             }
             deleteBusy = false
@@ -319,6 +327,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 // GitHub only returns the first 1000 results
                 if (count < 30 || searchPage >= 33) searchEnd = true else searchPage++
             } catch (e: Exception) {
+                AppLog.error("search_failed", e, "type" to lastType.name, "page" to searchPage)
                 searchError = friendly(e)
             }
             searchLoading = false
@@ -355,11 +364,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     try {
                         api.releases(fullName)
                     } catch (e: ApiException) {
+                        AppLog.error("load_releases_failed", e, "repo" to fullName, "status" to e.code)
                         emptyList()
                     }
                 }
                 releases.addAll(rel)
             } catch (e: Exception) {
+                AppLog.error("load_repo_detail_failed", e, "repo" to fullName)
                 detailError = friendly(e)
             }
             detailLoading = false
@@ -398,6 +409,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 userRepos.addAll(page)
                 if (page.size < 50) userReposEnd = true else userReposPage++
             } catch (e: Exception) {
+                AppLog.error(
+                    "load_user_repos_failed",
+                    e,
+                    "login" to userReposLogin,
+                    "page" to userReposPage
+                )
                 userReposError = friendly(e)
             }
             userReposLoading = false
@@ -458,6 +475,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 savedFiles.add(SavedFile(asset.name, uri))
                 downloadStatus = str(R.string.download_saved, asset.name)
             } catch (e: Exception) {
+                AppLog.error("download_asset_failed", e, "repo" to repo.fullName, "asset" to asset.name)
                 downloadStatus = str(R.string.download_failed, friendly(e))
             }
             downloading = false
@@ -474,6 +492,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 uploadStatus = result
                 say(str(R.string.msg_code_uploaded, repo.fullName))
             } catch (e: Exception) {
+                AppLog.error("upload_failed", e, "repo" to repo.fullName, "branch" to branch)
                 uploadStatus = str(R.string.upload_failed, friendly(e))
             }
             uploadRunning = false
@@ -497,12 +516,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     buildStatus = str(R.string.build_done, files.joinToString(", ") { it.name })
                     say(str(R.string.msg_apk_saved))
                 } else {
+                    AppLog.error(
+                        "build_run_unsuccessful",
+                        null,
+                        "repo" to repo.fullName,
+                        "branch" to branch,
+                        "runId" to outcome.runId,
+                        "conclusion" to outcome.conclusion.ifEmpty { str(R.string.build_no_details) }
+                    )
                     buildStatus = str(
                         R.string.build_failed,
                         outcome.conclusion.ifEmpty { str(R.string.build_no_details) }
                     )
                 }
             } catch (e: Exception) {
+                AppLog.error("build_failed", e, "repo" to repo.fullName, "branch" to branch)
                 buildStatus = str(R.string.build_error, friendly(e))
             }
             buildRunning = false
@@ -520,6 +548,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val f = withContext(Dispatchers.IO) { builder.saveLogs(repo, runId) }
                 say(str(R.string.msg_log_saved, f.name))
             } catch (e: Exception) {
+                AppLog.error("download_log_failed", e, "repo" to repo.fullName, "runId" to runId)
                 say(str(R.string.msg_log_failed, friendly(e)))
             }
             logBusy = false

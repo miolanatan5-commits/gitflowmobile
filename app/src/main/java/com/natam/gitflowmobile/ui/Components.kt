@@ -1,6 +1,7 @@
 package com.natam.gitflowmobile.ui
 
 import androidx.compose.ui.res.stringResource
+import com.natam.gitflowmobile.AppLog
 import com.natam.gitflowmobile.R
 import android.content.Context
 import android.content.Intent
@@ -208,6 +209,7 @@ fun installApk(context: Context, uri: Uri) {
         }
         context.startActivity(intent)
     } catch (e: Exception) {
+        AppLog.error("install_apk_failed", e, "uri" to uri)
         Toast.makeText(context, context.getString(R.string.toast_install_failed), Toast.LENGTH_LONG).show()
     }
 }
