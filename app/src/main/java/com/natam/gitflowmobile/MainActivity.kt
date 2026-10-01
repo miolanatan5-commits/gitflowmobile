@@ -14,6 +14,7 @@ import com.natam.gitflowmobile.ui.theme.GitFlowMobileTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLog.info("app_start", "version" to BuildConfig.VERSION_NAME, "debug" to BuildConfig.DEBUG)
         enableEdgeToEdge()
         setContent {
             GitFlowMobileTheme {

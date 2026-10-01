@@ -1,6 +1,7 @@
 package com.natam.gitflowmobile.data
 
 import android.content.Context
+import com.natam.gitflowmobile.AppLog
 import com.natam.gitflowmobile.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -101,6 +102,7 @@ jobs:
         val before = try {
             api.workflowRuns(repo.fullName, WORKFLOW_FILE).maxOfOrNull { it.id } ?: 0L
         } catch (e: ApiException) {
+            AppLog.error("build_runs_probe_failed", e, "repo" to repo.fullName, "status" to e.code)
             0L
         }
 
@@ -113,6 +115,13 @@ jobs:
             } catch (e: ApiException) {
                 attempts++
                 if (attempts >= 8 || (e.code != 404 && e.code != 422)) throw e
+                AppLog.info(
+                    "build_dispatch_retry",
+                    "repo" to repo.fullName,
+                    "branch" to branch,
+                    "status" to e.code,
+                    "attempt" to attempts
+                )
                 delay(5000)
             }
         }
@@ -124,6 +133,13 @@ jobs:
             found = try {
                 api.workflowRuns(repo.fullName, WORKFLOW_FILE).firstOrNull { it.id > before }
             } catch (e: IOException) {
+                AppLog.error(
+                    "build_run_lookup_failed",
+                    e,
+                    "repo" to repo.fullName,
+                    "attempt" to i + 1,
+                    "status" to (e as? ApiException)?.code
+                )
                 null
             }
             if (found != null) break
@@ -150,6 +166,13 @@ jobs:
             try {
                 current = api.workflowRuns(repo.fullName, WORKFLOW_FILE).firstOrNull { it.id == started.id } ?: current
             } catch (e: IOException) {
+                AppLog.error(
+                    "build_status_poll_failed",
+                    e,
+                    "repo" to repo.fullName,
+                    "runId" to started.id,
+                    "status" to (e as? ApiException)?.code
+                )
                 if (e is ApiException && e.code in 400..499 && e.code != 429) throw e
             }
         }

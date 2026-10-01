@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.natam.gitflowmobile.AppLog
 import java.security.KeyStore
 
 /**
@@ -35,6 +36,7 @@ class TokenStore(private val context: Context) {
         return try {
             build()
         } catch (e: Exception) {
+            AppLog.error("token_store_reset", e, "reason" to "open_failed")
             reset()
             build()
         }
@@ -57,6 +59,7 @@ class TokenStore(private val context: Context) {
         return try {
             prefs.getString(tokenKey, "").orEmpty()
         } catch (e: Exception) {
+            AppLog.error("token_store_reset", e, "reason" to "read_failed")
             reset()
             prefs = build()
             ""
@@ -67,6 +70,7 @@ class TokenStore(private val context: Context) {
         try {
             prefs.edit().putString(tokenKey, token).apply()
         } catch (e: Exception) {
+            AppLog.error("token_store_reset", e, "reason" to "write_failed")
             reset()
             prefs = build()
             prefs.edit().putString(tokenKey, token).apply()
@@ -77,6 +81,7 @@ class TokenStore(private val context: Context) {
         try {
             prefs.edit().remove(tokenKey).apply()
         } catch (e: Exception) {
+            AppLog.error("token_store_reset", e, "reason" to "clear_failed")
             reset()
             prefs = build()
         }

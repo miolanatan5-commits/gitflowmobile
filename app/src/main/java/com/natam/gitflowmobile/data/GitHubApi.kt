@@ -2,6 +2,7 @@ package com.natam.gitflowmobile.data
 
 import android.content.Context
 import android.util.Base64
+import com.natam.gitflowmobile.AppLog
 import com.natam.gitflowmobile.R
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -69,19 +70,63 @@ class GitHubApi(private val context: Context, private val tokenProvider: () -> S
     private fun execute(makeRequest: () -> Request): String {
         var attempt = 0
         while (true) {
-            client.newCall(makeRequest()).execute().use { r ->
-                val body = r.body?.string().orEmpty()
-                if (r.isSuccessful) return body
-                val retryAfter = r.header("Retry-After")?.toLongOrNull()
-                val limited = r.code == 429 ||
-                    (r.code == 403 && (retryAfter != null || body.contains("rate limit", ignoreCase = true)))
-                if (limited && attempt < 3) {
-                    attempt++
-                    val seconds = (retryAfter ?: (20L * attempt)).coerceAtMost(90L)
-                    Thread.sleep(seconds * 1000)
-                    return@use
+            val request = makeRequest()
+            val startedAt = System.nanoTime()
+            fun elapsedMs(): Long = (System.nanoTime() - startedAt) / 1_000_000
+            try {
+                client.newCall(request).execute().use { r ->
+                    val body = r.body?.string().orEmpty()
+                    if (r.isSuccessful) {
+                        AppLog.info(
+                            "api_call",
+                            "method" to request.method,
+                            "path" to request.url.encodedPath,
+                            "status" to r.code,
+                            "durationMs" to elapsedMs(),
+                            "attempt" to attempt
+                        )
+                        return body
+                    }
+                    val retryAfter = r.header("Retry-After")?.toLongOrNull()
+                    val limited = r.code == 429 ||
+                        (r.code == 403 && (retryAfter != null || body.contains("rate limit", ignoreCase = true)))
+                    if (limited && attempt < 3) {
+                        attempt++
+                        val seconds = (retryAfter ?: (20L * attempt)).coerceAtMost(90L)
+                        AppLog.info(
+                            "api_rate_limited",
+                            "method" to request.method,
+                            "path" to request.url.encodedPath,
+                            "status" to r.code,
+                            "attempt" to attempt,
+                            "retryInSeconds" to seconds
+                        )
+                        Thread.sleep(seconds * 1000)
+                        return@use
+                    }
+                    throw ApiException(r.code, errorText(r.code, body))
                 }
-                throw ApiException(r.code, errorText(r.code, body))
+            } catch (e: ApiException) {
+                AppLog.error(
+                    "api_call_failed",
+                    e,
+                    "method" to request.method,
+                    "path" to request.url.encodedPath,
+                    "status" to e.code,
+                    "durationMs" to elapsedMs(),
+                    "attempt" to attempt
+                )
+                throw e
+            } catch (e: IOException) {
+                AppLog.error(
+                    "api_call_failed",
+                    e,
+                    "method" to request.method,
+                    "path" to request.url.encodedPath,
+                    "durationMs" to elapsedMs(),
+                    "attempt" to attempt
+                )
+                throw e
             }
         }
     }
