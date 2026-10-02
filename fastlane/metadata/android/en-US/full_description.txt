@@ -1,0 +1,11 @@
+GitFlow Mobile brings common GitHub repository tasks to Android, with an interface designed for accessibility and TalkBack.
+
+Features:
+- Browse, create, and delete repositories. Deletion requires typing the repository name.
+- Search GitHub repositories, users, organizations, and code.
+- Download APKs from repository releases and request installation through Android.
+- Upload a ZIP archive as a single commit, optionally stripping its root folder.
+- Start APK builds through GitHub Actions, then download the result and build log.
+- Store a user-provided GitHub Personal Access Token locally using Android encrypted storage.
+
+A GitHub Personal Access Token and an internet connection are required. The app sends requests directly to GitHub for actions initiated by the user. GitHub is a non-free network service.
