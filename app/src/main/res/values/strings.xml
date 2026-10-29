@@ -146,7 +146,7 @@
     <string name="up_none">No files were uploaded.</string>
     <string name="up_commit">Creating the commit…</string>
     <string name="up_done">Done! %1$d files uploaded to branch %2$s.</string>
-    <string name="up_skipped_secrets">\u0020Skipped %1$d signing/local file(s) (release.keystore, release.properties, local.properties) for safety.</string>
+    <string name="up_skipped_secrets">\u0020Skipped %1$d signing/local file(s) for safety.</string>
     <string name="up_skipped_large">\u0020%1$d file(s) over 50 MB were skipped.</string>
     <string name="bs_checking">Checking the build workflow…</string>
     <string name="bs_starting">Starting the build…</string>

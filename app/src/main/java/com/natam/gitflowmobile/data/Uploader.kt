@@ -16,17 +16,9 @@ import java.util.zip.ZipInputStream
 /** Uploads the contents of a .zip to a repository as a SINGLE commit (Git Data API). */
 class Uploader(private val context: Context, private val api: GitHubApi) {
 
-    private val secretFiles = setOf("release.keystore", "release.properties", "local.properties")
+    private fun isSecret(path: String): Boolean = UploadFilter.isSecret(path)
 
-    private fun isSecret(path: String): Boolean = secretFiles.contains(path.substringAfterLast('/'))
-
-    private fun keep(path: String): Boolean {
-        if (path.isBlank()) return false
-        val segments = path.split('/')
-        if (segments.any { it == ".." || it == ".git" || it == ".gradle" || it == ".idea" || it == "__MACOSX" }) return false
-        if (path.endsWith(".DS_Store")) return false
-        return true
-    }
+    private fun keep(path: String): Boolean = UploadFilter.keep(path)
 
     private fun decodeUtf8OrNull(bytes: ByteArray): String? {
         if (bytes.any { it == 0.toByte() }) return null

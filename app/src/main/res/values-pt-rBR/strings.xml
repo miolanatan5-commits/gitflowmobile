@@ -146,7 +146,7 @@
     <string name="up_none">Nenhum arquivo foi enviado.</string>
     <string name="up_commit">Criando o commit…</string>
     <string name="up_done">Pronto! %1$d arquivos enviados para o branch %2$s.</string>
-    <string name="up_skipped_secrets">\u0020Ignorei %1$d arquivo(s) de assinatura/local (release.keystore, release.properties, local.properties) por segurança.</string>
+    <string name="up_skipped_secrets">\u0020Ignorei %1$d arquivo(s) de assinatura/local por segurança.</string>
     <string name="up_skipped_large">\u0020%1$d arquivo(s) acima de 50 MB foram ignorados.</string>
     <string name="bs_checking">Verificando o workflow de build…</string>
     <string name="bs_starting">Iniciando a compilação…</string>
