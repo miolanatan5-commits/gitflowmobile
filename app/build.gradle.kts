@@ -51,10 +51,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
@@ -85,6 +83,23 @@ android {
                 "/META-INF/INDEX.LIST",
                 "/META-INF/io.netty.versions.properties"
             )
+        }
+    }
+}
+
+// A release artifact must carry the release key. When release.keystore or
+// release.properties is absent, the release build fails here instead of
+// producing an APK signed with the public Android debug key.
+tasks.configureEach {
+    val signingPresent = hasReleaseSigning
+    val packagesReleaseArtifact = (name.startsWith("package") || name.startsWith("bundle")) &&
+        (name.endsWith("Release") || name.endsWith("ReleaseUniversalApk") || name.endsWith("ReleaseBundle"))
+    if (packagesReleaseArtifact) {
+        doFirst {
+            check(signingPresent) {
+                "Release signing material is missing: put release.keystore and release.properties " +
+                    "at the repository root before you build a release artifact."
+            }
         }
     }
 }
