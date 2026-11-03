@@ -286,23 +286,34 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // stale response write results for the previous query over the new query list.
     private var searchGeneration = 0
 
+    // The request that is currently in flight. It lets an identical reset be skipped instead
+    // of spending a second GitHub search request on results that are already on the way.
+    private data class SearchRequest(val term: String, val type: SearchType, val sort: SearchSort, val page: Int)
+    private var inFlight: SearchRequest? = null
+
     fun search(reset: Boolean) {
         val q = query.trim()
         if (reset && q.isEmpty()) {
             say(str(R.string.msg_search_term_required))
             return
         }
-        // A "Load more" request must not overlap the request already in flight. A reset
-        // search carries a new query and supersedes it instead, so the newest query always runs.
-        if (searchLoading && !reset) return
-
         val page = if (reset) 1 else searchPage
         val type = if (reset) searchType else lastType
         val sort = if (reset) searchSort else lastSort
         val term = if (reset) q else lastQuery
+        val request = SearchRequest(term, type, sort, page)
+
+        if (searchLoading) {
+            // A "Load more" request must not overlap the request already in flight.
+            if (!reset) return
+            // A reset that repeats the request already in flight adds nothing, and the newest
+            // query always runs, so skip the duplicate instead of spending a second request.
+            if (request == inFlight) return
+        }
 
         searchGeneration++
         val generation = searchGeneration
+        inFlight = request
 
         viewModelScope.launch {
             searchLoading = true
