@@ -281,53 +281,84 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var lastType = SearchType.REPOS
     private var lastSort = SearchSort.MATCH
 
+    // Bumped for every search request. A response whose generation is no longer current is
+    // discarded, so a reset search can supersede an in-flight request without letting the
+    // stale response write results for the previous query over the new query list.
+    private var searchGeneration = 0
+
+    // The request that is currently in flight. It lets an identical reset be skipped instead
+    // of spending a second GitHub search request on results that are already on the way.
+    private data class SearchRequest(val term: String, val type: SearchType, val sort: SearchSort, val page: Int)
+    private var inFlight: SearchRequest? = null
+
     fun search(reset: Boolean) {
         val q = query.trim()
         if (reset && q.isEmpty()) {
             say(str(R.string.msg_search_term_required))
             return
         }
-        if (searchLoading) return
+        val page = if (reset) 1 else searchPage
+        val type = if (reset) searchType else lastType
+        val sort = if (reset) searchSort else lastSort
+        val term = if (reset) q else lastQuery
+        val request = SearchRequest(term, type, sort, page)
+
+        if (searchLoading) {
+            // A "Load more" request must not overlap the request already in flight.
+            if (!reset) return
+            // A reset that repeats the request already in flight adds nothing, and the newest
+            // query always runs, so skip the duplicate instead of spending a second request.
+            if (request == inFlight) return
+        }
+
+        searchGeneration++
+        val generation = searchGeneration
+        inFlight = request
+
         viewModelScope.launch {
             searchLoading = true
             searchError = null
+            if (reset) {
+                searchPage = 1
+                searchEnd = false
+                lastQuery = q
+                lastType = searchType
+                lastSort = searchSort
+                resultType = searchType
+                repoResults.clear()
+                userResults.clear()
+                codeResults.clear()
+            }
             try {
-                if (reset) {
-                    searchPage = 1
-                    searchEnd = false
-                    lastQuery = q
-                    lastType = searchType
-                    lastSort = searchSort
-                    resultType = searchType
-                    repoResults.clear()
-                    userResults.clear()
-                    codeResults.clear()
-                }
                 var count = 0
-                when (lastType) {
+                when (type) {
                     SearchType.REPOS -> {
-                        val p = withContext(Dispatchers.IO) { api.searchRepos(lastQuery, searchPage, lastSort.api) }
+                        val p = withContext(Dispatchers.IO) { api.searchRepos(term, page, sort.api) }
+                        if (generation != searchGeneration) return@launch
                         repoResults.addAll(p.items)
                         searchTotal = p.total
                         count = p.items.size
                     }
                     SearchType.USERS -> {
-                        val p = withContext(Dispatchers.IO) { api.searchUsers(lastQuery, searchPage) }
+                        val p = withContext(Dispatchers.IO) { api.searchUsers(term, page) }
+                        if (generation != searchGeneration) return@launch
                         userResults.addAll(p.items)
                         searchTotal = p.total
                         count = p.items.size
                     }
                     SearchType.CODE -> {
-                        val p = withContext(Dispatchers.IO) { api.searchCode(lastQuery, searchPage) }
+                        val p = withContext(Dispatchers.IO) { api.searchCode(term, page) }
+                        if (generation != searchGeneration) return@launch
                         codeResults.addAll(p.items)
                         searchTotal = p.total
                         count = p.items.size
                     }
                 }
                 // GitHub only returns the first 1000 results
-                if (count < 30 || searchPage >= 33) searchEnd = true else searchPage++
+                if (count < 30 || page >= 33) searchEnd = true else searchPage = page + 1
             } catch (e: Exception) {
-                AppLog.error("search_failed", e, "type" to lastType.name, "page" to searchPage)
+                if (generation != searchGeneration) return@launch
+                AppLog.error("search_failed", e, "type" to type.name, "page" to page)
                 searchError = friendly(e)
             }
             searchLoading = false
